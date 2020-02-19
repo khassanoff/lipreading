@@ -30,7 +30,7 @@ class MyDataset(Dataset):
             
         self.data = []
         for vid in self.videos:
-            items = vid.split(os.path.sep)            
+            items = vid.split(os.path.sep)
             self.data.append((vid, items[-4], items[-1]))
         
                 
@@ -41,9 +41,9 @@ class MyDataset(Dataset):
 
         if(self.phase == 'train'):
             vid = HorizontalFlip(vid)
-          
+ 
         vid = ColorNormalize(vid)                   
-        
+
         vid_len = vid.shape[0]
         anno_len = anno.shape[0]
         vid = self._padding(vid, self.vid_pad)
@@ -93,29 +93,29 @@ class MyDataset(Dataset):
         txt = []
         for n in arr:
             if(n >= start):
-                txt.append(MyDataset.letters[n - start])     
+                txt.append(MyDataset.letters[n - start])
         return ''.join(txt).strip()
-    
+
     @staticmethod
     def ctc_arr2txt(arr, start):
         pre = -1
         txt = []
         for n in arr:
-            if(pre != n and n >= start):                
+            if(pre != n and n >= start):
                 if(len(txt) > 0 and txt[-1] == ' ' and MyDataset.letters[n - start] == ' '):
                     pass
                 else:
-                    txt.append(MyDataset.letters[n - start])                
+                    txt.append(MyDataset.letters[n - start])
             pre = n
         return ''.join(txt).strip()
-            
+
     @staticmethod
-    def wer(predict, truth):        
+    def wer(predict, truth):
         word_pairs = [(p[0].split(' '), p[1].split(' ')) for p in zip(predict, truth)]
         wer = [1.0*editdistance.eval(p[0], p[1])/len(p[1]) for p in word_pairs]
         return wer
-        
+
     @staticmethod
-    def cer(predict, truth):        
+    def cer(predict, truth):
         cer = [1.0*editdistance.eval(p[0], p[1])/len(p[1]) for p in zip(predict, truth)]
         return cer

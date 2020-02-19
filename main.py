@@ -79,8 +79,8 @@ def test(model, net):
                 for (predict, truth) in list(zip(pred_txt, truth_txt))[:10]:
                     print('{:<50}|{:>50}'.format(predict, truth))
                 print(''.join(101 *'-'))
-                print('test_iter={}, eta={}, wer={}, cer={}'.format(i_iter, eta,np.array(wer).mean(),
-                                                                 np.array(cer).mean()))
+                print('test_iter={0:}, eta={1:.4f}, wer={2:.4f}, cer={3:.4f}'.format(i_iter,
+                        eta,np.array(wer).mean(), np.array(cer).mean()))
                 print(''.join(101 *'-'))
 
         return (np.array(loss_list).mean(), np.array(wer).mean(), np.array(cer).mean())
@@ -121,16 +121,13 @@ def train(model, net):
                 optimizer.step()
 
             tot_iter = i_iter + epoch*len(loader)
-
             pred_txt = ctc_decode(y)
-
             truth_txt = [MyDataset.arr2txt(txt[_], start=1) for _ in range(txt.size(0))]
             train_wer.extend(MyDataset.wer(pred_txt, truth_txt))
 
             if(tot_iter % opt.display == 0):
                 v = 1.0*(time.time()-tic)/(tot_iter+1)
                 eta = (len(loader)-i_iter)*v/3600.0
-
                 writer.add_scalar('train loss', loss, tot_iter)
                 writer.add_scalar('train wer', np.array(train_wer).mean(), tot_iter)
                 print(''.join(101*'-'))
@@ -140,21 +137,23 @@ def train(model, net):
                 for (predict, truth) in list(zip(pred_txt, truth_txt))[:3]:
                     print('{:<50}|{:>50}'.format(predict, truth))
                 print(''.join(101*'-'))
-                print('epoch={}, tot_iter={}, eta={}, loss={}, train_wer={}'.format(\
+                print('epoch={0:}, tot_iter={1:}, eta={2:.4f}, loss={3:.6f}, train_wer={4:.4f}'.format(
                         epoch, tot_iter, eta, loss, np.array(train_wer).mean()))
                 print(''.join(101*'-'))
 
-            if(tot_iter % opt.test_step == 0 and tot_iter != 0):                
+            if(tot_iter % opt.test_step == 0 and tot_iter != 0):
                 (loss, wer, cer) = test(model, net)
                 print('\n' + ''.join(101*'*'))
-                print('TEST SET: i_iter={}, lr={}, loss={}, wer={}, cer={}'.format(tot_iter,
-                        show_lr(optimizer), loss, wer, cer))
+                print('TEST SET: i_iter={0:}, lr={1:}, loss={2:.6f}, wer={3:.4f}, cer={4:.4f}'.format(
+                        tot_iter, show_lr(optimizer), loss, wer, cer))
                 print(''.join(101*'*') + '\n')
                 scheduler.step(loss)
                 writer.add_scalar('val loss', loss, tot_iter)
                 writer.add_scalar('wer', wer, tot_iter)
                 writer.add_scalar('cer', cer, tot_iter)
-                savename = '{0:}_bs{1:}_lr{2:}_wd{3:}_patience{4:}_loss{5:.6f}_wer{6:.4f}_cer{7:.4f}.pt'.format(opt.save_prefix, opt.batch_size, opt.base_lr, opt.weight_decay, opt.patience, loss, wer, cer)
+                savename = ('{0:}_bs{1:}_lr{2:}_wd{3:}_patience{4:}_drop{5:}_epoch{6:}_loss{7:.6f}'
+                    '_wer{8:.4f}_cer{9:.4f}.pt').format(opt.save_prefix, opt.batch_size,
+                    opt.base_lr, opt.weight_decay, opt.patience, opt.drop, epoch, loss, wer, cer)
                 (path, name) = os.path.split(savename)
                 if(not os.path.exists(path)):
                     os.makedirs(path)
@@ -163,14 +162,14 @@ def train(model, net):
                     exit()
 
         print('\n' + ''.join(101*'*'))
-        print('EPOCH={}, total loss={}, time={}m'.format(epoch, total_loss/len(dataset),
+        print('EPOCH={0:}, total loss={1:6f}, time={2:.2f}m'.format(epoch, total_loss/len(dataset),
                                                          (time.time()-tic_epoch)/60))
         print(''.join(101*'*') + '\n')
 
 
 if(__name__ == '__main__'):
     print("Loading options...")
-    model = LipNet()
+    model = LipNet(opt.drop)
     model = model.cuda()
     net = nn.DataParallel(model).cuda()
 
